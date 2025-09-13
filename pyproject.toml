@@ -1,0 +1,15 @@
+[project]
+name = "AlgoTrade"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Sarath Raj C K", email = "sarathrj10@gmail.com"},
+]
+dependencies = ["python-dotenv>=1.1.1", "kiteconnect>=5.0.1"]
+requires-python = "==3.13.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
