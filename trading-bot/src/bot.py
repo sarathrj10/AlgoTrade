@@ -19,14 +19,14 @@ def load_position():
     if state.get("buy_price") and state.get("position_qty"):
         return state["buy_price"], state["position_qty"]
     positions = kite_client.get_positions()
-    for sec in ("day", "net"):
-        for p in positions.get(sec, []):
-            if p.get("tradingsymbol") == config.SYMBOL and float(p.get("quantity", 0)) > 0:
-                state["buy_price"] = float(p.get("average_price"))
-                state["position_qty"] = int(p.get("quantity"))
-                save_state(state, config.STATE_FILE)
-                logging.info("Loaded position buy_price=%.2f qty=%d", state["buy_price"], state["position_qty"])
-                return state["buy_price"], state["position_qty"]
+    # Only check day positions for intraday trading
+    for p in positions.get("day", []):
+        if p.get("tradingsymbol") == config.SYMBOL and float(p.get("quantity", 0)) > 0:
+            state["buy_price"] = float(p.get("average_price"))
+            state["position_qty"] = int(p.get("quantity"))
+            save_state(state, config.STATE_FILE)
+            logging.info("Loaded position buy_price=%.2f qty=%d", state["buy_price"], state["position_qty"])
+            return state["buy_price"], state["position_qty"]
     logging.error("No BUY position found for %s", config.SYMBOL)
     return None, None
 
