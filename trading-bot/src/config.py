@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
-ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+API_SECRET = os.getenv("API_SECRET")
+
 SYMBOL = os.getenv("SYMBOL")
 LOTS = int(os.getenv("LOTS", 1))
 LOT_SIZE = int(os.getenv("LOT_SIZE", 75))

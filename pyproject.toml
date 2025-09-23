@@ -15,6 +15,7 @@ license = {text = "MIT"}
 distribution = false
 
 [tool.pdm.scripts]
+auth = "python trading-bot/scripts/zerodha_auth.py"
 test = "pytest"
 test-verbose = "pytest -v"
 test-coverage = "pytest --cov=src tests/"

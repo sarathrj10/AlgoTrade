@@ -1,7 +1,15 @@
 from kiteconnect import KiteConnect
+from .auth import ZerodhaAuth
 
 class KiteClient:
-    def __init__(self, api_key, access_token):
+    def __init__(self, api_key=None, access_token=None):
+        # If credentials not provided, use auth module
+        if not api_key or not access_token:
+            auth = ZerodhaAuth()
+            credentials = auth.get_credentials()
+            api_key = credentials["api_key"]
+            access_token = credentials["access_token"]
+            
         self.kite = KiteConnect(api_key=api_key)
         self.kite.set_access_token(access_token)
 

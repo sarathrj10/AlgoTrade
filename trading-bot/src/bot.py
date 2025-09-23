@@ -10,7 +10,7 @@ from src import config
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 state = load_state(config.STATE_FILE)
-kite_client = KiteClient(config.API_KEY, config.ACCESS_TOKEN)
+kite_client = KiteClient()
 
 # -------------------------
 # Load buy position
@@ -53,7 +53,8 @@ def run_bot():
     # -------------------------
     # KiteTicker callbacks
     # -------------------------
-    kws = KiteTicker(config.API_KEY, config.ACCESS_TOKEN)
+    # Reuse the same credentials that kite_client is using
+    kws = KiteTicker(kite_client.kite.api_key, kite_client.kite.access_token)
     instrument_token = None
 
     def on_connect(ws, response):
