@@ -5,7 +5,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "Sarath Raj C K", email = "sarathrj10@gmail.com"},
 ]
-dependencies = ["python-dotenv>=1.1.1", "kiteconnect>=5.0.1", "pytest>=8.4.2"]
+dependencies = ["python-dotenv>=1.1.1", "kiteconnect>=5.0.1", "pytest>=8.4.2", "flask>=3.1.2"]
 requires-python = "==3.13.*"
 readme = "README.md"
 license = {text = "MIT"}
@@ -16,8 +16,6 @@ distribution = false
 
 [tool.pdm.scripts]
 auth = "python trading-bot/scripts/zerodha_auth.py"
-test = "pytest"
-test-verbose = "pytest -v"
-test-coverage = "pytest --cov=src tests/"
-lint = "flake8 src tests"
-start = "python -m trading-bot.scripts.run_bot"
+start-bot = "python trading-bot/scripts/run_bot.py"
+test = "pytest trading-bot/tests/"
+test-verbose = "pytest trading-bot/tests/ -v"
