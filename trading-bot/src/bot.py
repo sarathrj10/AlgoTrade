@@ -41,8 +41,11 @@ class DynamicTradingBot:
         """Start trailing SL logic for a position"""
         logging.info(f"Starting trailing SL for {symbol}: price={buy_price}, qty={quantity}")
         
-        # Calculate gaps based on quantity (assuming standard lot sizes)
-        lots = max(1, quantity // 75)  # Assuming standard lot size of 75
+        # Calculate lots based on configured lot size
+        lots = max(1, quantity // config.LOT_SIZE)
+        
+        logging.info(f"{symbol}: lot_size={config.LOT_SIZE}, lots={lots}, quantity={quantity}")
+        
         sl_gap = money_to_points(config.RISK_RUPEES, quantity, lots, config.RISK_MODE)
         target_gap = money_to_points(config.REWARD_RUPEES, quantity, lots, config.RISK_MODE)
         trail_step = money_to_points(config.TRAIL_RUPEES, quantity, lots, config.RISK_MODE)
@@ -309,8 +312,8 @@ class DynamicTradingBot:
                     buy_price = pos_data['buy_price']
                     quantity = pos_data['quantity']
                     
-                    # Calculate gaps
-                    lots = max(1, quantity // 75)
+                    # Calculate gaps using configured lot size
+                    lots = max(1, quantity // config.LOT_SIZE)
                     sl_gap = money_to_points(config.RISK_RUPEES, quantity, lots, config.RISK_MODE)
                     target_gap = money_to_points(config.REWARD_RUPEES, quantity, lots, config.RISK_MODE)
                     trail_step = money_to_points(config.TRAIL_RUPEES, quantity, lots, config.RISK_MODE)

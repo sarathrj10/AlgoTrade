@@ -4,3 +4,14 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .pdm-python
+
+# Environment variables
+.env
+trading-bot/.env
+
+# Temporary test files
+test.py
+
+# State files
+trading-bot/state.json
+

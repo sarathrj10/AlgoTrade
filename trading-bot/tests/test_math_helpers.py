@@ -29,3 +29,31 @@ def test_money_to_points_scenarios(scenario, value, quantity, lots, mode, expect
     result = money_to_points(value, quantity, lots, mode)
     assert result == expected, f"Failed in scenario: {scenario}"
 
+
+@pytest.mark.parametrize("scenario, base_sl, current_ltp, first_target, trail_step, expected", [
+    # Based on example: Buy at 20, SL at 13, First target at 34, base_sl moved to 27 (midpoint)
+    # Trail step is 3.34, so SL moves up every 3.34 points above first target
+    
+    # Scenario 1: NIFTY50 trailing after first target hit
+    ("LTP just above target - no trail yet", 27, 35, 34, 3.34, 27),      # LTP 35: 1 point above target, less than trail_step
+    ("LTP 2 points above target - no trail", 27, 36, 34, 3.34, 27),     # LTP 36: 2 points above target, less than trail_step  
+    ("LTP 3 points above target - no trail", 27, 37, 34, 3.34, 27),     # LTP 37: 3 points above target, less than trail_step
+    ("LTP 4 points above target - trail kicks in", 27, 38, 34, 3.34, 30.34),  # LTP 38: 4 points above, exceeds trail_step, SL moves to 27+3.34=30.34
+    
+    # Additional scenarios for comprehensive testing
+    ("LTP at exactly first target", 27, 34, 34, 3.34, 27),              # At target level, no trailing
+    ("LTP below first target", 27, 33, 34, 3.34, 27),                   # Below target, no trailing
+    ("LTP much higher - multiple trail steps", 27, 45, 34, 3.34, 37.02), # LTP 45: (45-34)/3.34 = 3.29 steps, so 27+(3*3.34)=37.02
+])
+def test_trailing_steps_scenarios(scenario, base_sl, current_ltp, first_target, trail_step, expected):
+    """
+    Test trailing stop-loss logic with various market scenarios
+    
+    The trailing_steps function should:
+    1. Return base_sl if LTP <= first_target (no trailing below target)
+    2. Calculate steps above first_target: (LTP - first_target) // trail_step
+    3. Return base_sl + (full_steps * trail_step)
+    """
+    result = trailing_steps(base_sl, current_ltp, first_target, trail_step)
+    assert abs(result - expected) < 0.01, f"Failed in scenario: {scenario}. Expected {expected}, got {result}"
+

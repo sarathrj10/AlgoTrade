@@ -14,6 +14,7 @@ ACCESS_TOKEN_DATE = os.getenv("ACCESS_TOKEN_DATE")
 # ============================================================================
 # RISK MANAGEMENT SETTINGS
 # ============================================================================
+LOT_SIZE = int(os.getenv("LOT_SIZE", 75))  # Default to NIFTY lot size
 RISK_RUPEES = float(os.getenv("RISK_RUPEES", 500))
 REWARD_RUPEES = float(os.getenv("REWARD_RUPEES", 1000))
 TRAIL_RUPEES = float(os.getenv("TRAIL_RUPEES", 100))
