@@ -129,6 +129,44 @@ class DynamicTradingBot:
                 if "403" in str(e) or "Forbidden" in str(e):
                     logging.error("💡 Market data access restricted - this is normal during market closure")
     
+    def remove_position(self, symbol: str):
+        """Remove position from monitoring - SL triggered or position closed"""
+        try:
+            # Remove from active positions
+            if symbol in self.active_positions:
+                del self.active_positions[symbol]
+                logging.info(f"🗑️  Removed {symbol} from active positions")
+            
+            # Unsubscribe from WebSocket
+            instrument_token = self.get_instrument_token(symbol)
+            if instrument_token and instrument_token in self.subscribed_tokens:
+                try:
+                    if self.market_ws:
+                        self.market_ws.unsubscribe([instrument_token])
+                        logging.info(f"📡 Unsubscribed from market data for {symbol}")
+                    self.subscribed_tokens.remove(instrument_token)
+                except Exception as e:
+                    logging.error(f"Failed to unsubscribe from {symbol}: {e}")
+            
+            # Remove from persistent state
+            if 'active_positions' in self.state and symbol in self.state['active_positions']:
+                del self.state['active_positions'][symbol]
+                save_state(self.state, config.STATE_FILE)
+                logging.info(f"💾 Removed {symbol} from persistent state")
+            
+            # Close WebSocket if no more positions to monitor
+            if not self.active_positions and self.market_ws:
+                logging.info("📡 No more positions to monitor - closing WebSocket")
+                try:
+                    self.market_ws.close()
+                    self.market_ws = None
+                    self.subscribed_tokens.clear()
+                except Exception as e:
+                    logging.error(f"Error closing WebSocket: {e}")
+                    
+        except Exception as e:
+            logging.error(f"Error removing position {symbol}: {e}")
+    
     def handle_order_update(self, order):
         """Handle order update from polling or postback"""
         try:
@@ -136,8 +174,22 @@ class DynamicTradingBot:
             transaction_type = order.get('transaction_type')
             symbol = order.get('tradingsymbol')
             order_type = order.get('order_type', '')
+            order_id = order.get('order_id')
             
-            # Only process BUY orders that are COMPLETE
+            # Check if this is a SL order completion (position exit)
+            if (status == 'COMPLETE' and 
+                transaction_type == 'SELL' and 
+                order_type in ['SL', 'SL-M'] and
+                symbol in self.active_positions):
+                
+                # Check if this is our SL order
+                position = self.active_positions[symbol]
+                if position.get('sl_order_id') == order_id:
+                    logging.info(f"🎯 SL order executed for {symbol}! Position closed.")
+                    self.remove_position(symbol)
+                    return
+            
+            # Only process BUY orders that are COMPLETE for new positions
             if (status == 'COMPLETE' and 
                 transaction_type == 'BUY' and 
                 order_type in ['MARKET', 'LIMIT'] and  # Not SL orders
@@ -183,6 +235,14 @@ class DynamicTradingBot:
         target_gap = position['target_gap']
         trail_step = position['trail_step']
         trailing_sl = position['trailing_sl']
+        current_sl = position['sl_trigger']
+        
+        # Check if SL might have been triggered (LTP below SL trigger)
+        if ltp <= current_sl:
+            logging.info(f"🚨 {symbol}: SL likely triggered! LTP={ltp:.2f} <= SL={current_sl:.2f}")
+            logging.info(f"📤 Removing {symbol} from monitoring (position likely closed)")
+            self.remove_position(symbol)
+            return
         
         first_target = buy_price + target_gap
         
