@@ -145,11 +145,13 @@ class DynamicTradingBot:
                 symbol not in self.active_positions):
                 
                 buy_price = float(order.get('average_price', 0))
-                quantity = int(order.get('filled_quantity', 0))
+                quantity = int(order.get('quantity', 0))
                 
                 if buy_price > 0 and quantity > 0:
                     logging.info(f"New BUY execution detected: {symbol} @ {buy_price} qty={quantity}")
                     self.start_trailing_for_position(symbol, buy_price, quantity)
+            else:
+                logging.debug(f"Ignored order update: {order}")
                     
         except Exception as e:
             logging.error(f"Error processing order update: {e}")
