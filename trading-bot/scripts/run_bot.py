@@ -24,13 +24,66 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from flask import Flask, request, jsonify
 import json
 import logging
+import threading
+import signal
+import atexit
 from src.bot import DynamicTradingBot
+from src import config
+
+# Optional ngrok import
+ngrok = None
+if config.USE_NGROK:
+    try:
+        from pyngrok import ngrok
+        logging.info("✅ pyngrok imported successfully")
+    except ImportError:
+        logging.warning("⚠️  pyngrok not installed. Install with: pip install pyngrok")
+        logging.warning("⚠️  Continuing without ngrok support...")
+        config.USE_NGROK = False
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 # Global bot instance (in production, use proper singleton pattern)
 bot_instance = None
+ngrok_tunnel = None
+shutdown_event = threading.Event()
+
+def cleanup():
+    """Clean up resources on exit"""
+    global ngrok_tunnel, bot_instance
+    
+    # Set shutdown event to stop any running threads gracefully
+    shutdown_event.set()
+    
+    # Clean up ngrok tunnel
+    if ngrok_tunnel:
+        try:
+            ngrok.disconnect(ngrok_tunnel.public_url)
+            print("🔌 Ngrok tunnel disconnected")
+        except:
+            pass
+    
+    # Clean up bot instance
+    if bot_instance and hasattr(bot_instance, 'market_ws') and bot_instance.market_ws:
+        try:
+            bot_instance.market_ws.close()
+        except:
+            pass
+    
+    # Ensure logging is properly flushed
+    logging.shutdown()
+
+def signal_handler(signum, frame):
+    """Handle system signals gracefully"""
+    print(f"\n⏹️  Received signal {signum}, shutting down gracefully...")
+    cleanup()
+    sys.exit(0)
+
+# Register signal handlers and cleanup
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+atexit.register(cleanup)
 
 @app.route('/postback', methods=['POST'])
 def handle_postback():
@@ -62,23 +115,48 @@ def health_check():
 
 def run_postback_server():
     """Run the integrated bot with postback server"""
-    global bot_instance
+    global bot_instance, ngrok_tunnel
     
     print("🚀 Starting Dynamic Trading Bot...")
     print("📡 Integrated with real-time postback notifications!")
-    print("\n🔧 POSTBACK SETUP:")
-    print("1. Configure this URL in your Zerodha app postback settings:")
-    print("   📍 Production: https://yourdomain.com/postback")
-    print("   📍 Local: https://your-ngrok-url.ngrok.io/postback")
-    print("\n💡 For local testing:")
-    print("   📱 Run: ngrok http 5001")
-    print("   📍 Then use the ngrok HTTPS URL in Zerodha settings")
+    
+    # Start ngrok tunnel if enabled
+    if config.USE_NGROK and ngrok:
+        try:
+            # Set auth token if provided
+            if config.NGROK_AUTH_TOKEN:
+                ngrok.set_auth_token(config.NGROK_AUTH_TOKEN)
+            
+            # Create tunnel
+            ngrok_tunnel = ngrok.connect(5001)
+            public_url = ngrok_tunnel.public_url
+            
+            print(f"\n🌐 NGROK TUNNEL CREATED:")
+            print(f"   📍 Public URL: {public_url}")
+            print(f"   � Postback URL: {public_url}/postback")
+            print(f"   📍 Health check: {public_url}/health")
+            
+        except Exception as e:
+            logging.error(f"❌ Failed to create ngrok tunnel: {e}")
+            print("⚠️  Continuing without ngrok tunnel...")
+    
+    print("\n�🔧 POSTBACK SETUP:")
+    if ngrok_tunnel:
+        print("✅ NGROK ENABLED - Use this URL in Zerodha app:")
+        print(f"   📍 {ngrok_tunnel.public_url}/postback")
+    else:
+        print("1. Configure this URL in your Zerodha app postback settings:")
+        print("   📍 Production: https://yourdomain.com/postback")
+        print("   📍 Local: https://your-ngrok-url.ngrok.io/postback")
+        print("\n💡 For local testing:")
+        print("   📱 Run: ngrok http 5001")
+        print("   📍 Or set USE_NGROK=true in .env for automatic tunnel")
+    
     print("\n✅ Once configured, you'll get INSTANT order notifications!")
     print("📈 Just place your orders in Kite - bot handles the rest!")
     print("⏹️  Press Ctrl+C to stop everything.\n")
     
     # Start the bot in a separate thread
-    import threading
     bot_instance = DynamicTradingBot()
     bot_thread = threading.Thread(target=bot_instance.run, daemon=True)
     bot_thread.start()
@@ -86,8 +164,16 @@ def run_postback_server():
     print("🤖 Trading bot started and ready...")
     print("🌐 Flask postback server starting on port 5001...")
     
-    # Run Flask server on port 5001 to avoid macOS AirPlay conflict
-    app.run(host='0.0.0.0', port=5001, debug=False)
+    try:
+        # Run Flask server on port 5001 to avoid macOS AirPlay conflict
+        app.run(host='0.0.0.0', port=5001, debug=False, use_reloader=False)
+    except (KeyboardInterrupt, SystemExit):
+        print("\n⏹️  Shutting down...")
+    except Exception as e:
+        logging.error(f"Server error: {e}")
+    finally:
+        # cleanup() will be called automatically via atexit
+        pass
 
 if __name__ == "__main__":
     run_postback_server()

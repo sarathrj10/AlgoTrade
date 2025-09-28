@@ -35,3 +35,9 @@ MIN_SL_STEP = float(os.getenv("MIN_SL_STEP", 0.1))
 # SYSTEM SETTINGS
 # ============================================================================
 STATE_FILE = os.getenv("STATE_FILE", "state.json")
+
+# ============================================================================
+# NGROK SETTINGS (Optional - for quick testing)
+# ============================================================================
+USE_NGROK = os.getenv("USE_NGROK", "false").lower() in ("true", "1", "yes", "on")
+NGROK_AUTH_TOKEN = os.getenv("NGROK_AUTH_TOKEN")  # Optional: Set your ngrok auth token

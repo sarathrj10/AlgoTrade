@@ -5,7 +5,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "Sarath Raj C K", email = "sarathrj10@gmail.com"},
 ]
-dependencies = ["python-dotenv>=1.1.1", "kiteconnect>=5.0.1", "pytest>=8.4.2", "flask>=3.1.2"]
+dependencies = ["python-dotenv>=1.1.1", "kiteconnect>=5.0.1", "pytest>=8.4.2", "flask>=3.1.2", "pyngrok>=7.4.0"]
 requires-python = "==3.13.*"
 readme = "README.md"
 license = {text = "MIT"}

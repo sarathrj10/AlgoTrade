@@ -30,6 +30,18 @@ This bot automatically detects when you place BUY orders manually in Kite and st
 ✅ **Auto Recovery** - Restores positions on bot restart  
 ✅ **Efficient** - No unnecessary polling or API calls  
 ✅ **Robust Error Handling** - Continues running even if some operations fail  
+✅ **Optional Ngrok Integration** - Automatic tunnel creation for quick testing
+
+## Quick Start
+
+### Prerequisites
+```bash
+# Install dependencies (includes optional pyngrok)
+pdm install
+
+# If pyngrok is missing, install separately:
+pip install pyngrok
+```  
 
 ## Usage
 
@@ -64,7 +76,25 @@ pdm run python scripts/run_bot.py
 
 ## Postback Setup
 
-### Local Development with ngrok:
+### Automatic ngrok Setup (Recommended for Quick Testing):
+```bash
+# Enable automatic ngrok tunnel in your .env file
+USE_NGROK=true
+
+# Optional: Add your ngrok auth token for better stability
+NGROK_AUTH_TOKEN=your_auth_token_here
+
+# Start the bot - ngrok tunnel is created automatically!
+pdm run python scripts/run_bot.py
+```
+
+**What happens:**
+- ✅ Bot automatically creates ngrok tunnel 
+- ✅ Shows you the public URL to use in Zerodha settings
+- ✅ No need to run ngrok separately
+- ✅ Tunnel is cleaned up when bot stops
+
+### Manual ngrok Setup:
 ```bash
 # Terminal 1: Start the bot
 pdm run python scripts/run_bot.py
@@ -99,6 +129,10 @@ TRAIL_RUPEES=100         # Trailing step in rupees
 # Risk Mode
 RISK_MODE=PER_LOT        # PER_LOT or ABSOLUTE
 FIRST_TARGET_SL_MODE=MIDPOINT  # BUY (breakeven) or MIDPOINT
+
+# Ngrok Settings (Optional - for quick testing)
+USE_NGROK=true           # Automatically create ngrok tunnel
+NGROK_AUTH_TOKEN=your_token_here  # Optional: for better stability
 
 # Order Settings  
 ORDER_BUFFER=0.05        # Buffer for SL orders
